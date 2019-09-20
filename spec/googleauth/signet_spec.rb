@@ -121,9 +121,12 @@ describe Signet::OAuth2::Client do
     end
 
     it "does not retry and raises right away if it encounters a Signet::AuthorizationError" do
-      allow(@client).to receive(:orig_fetch_access_token!).at_most(:once)
-        .and_raise(Signet::AuthorizationError.new("Some Message"))
-      expect { @client.fetch_access_token! }.to raise_error Signet::AuthorizationError
+      mocked_responses = [:raise, :raise, :raise, :raise, "success"]
+      allow(@client).to receive(:orig_fetch_access_token!).exactly(5).times do
+        response = mocked_responses.shift
+        response == :raise ? raise(Signet::AuthorizationError) : response
+      end
+      expect(@client.fetch_access_token!).to eq("success")
     end
 
     it "does not retry and raises right away if it encounters a Signet::ParseError" do
